@@ -1,0 +1,23 @@
+{
+    "name": "fagforbundet/notification-api-client-bundle",
+    "description": "Symfony bundle for communication with notification API",
+    "type": "symfony-bundle",
+    "license": "MIT",
+    "autoload": {
+        "psr-4": {
+            "Fagforbundet\\NotificationApiClientBundle\\": "src/"
+        }
+    },
+    "authors": [
+        {
+            "name": "Tom Roar Furunes",
+            "email": "tom.roar@halloverden.no"
+        }
+    ],
+    "minimum-stability": "dev",
+    "prefer-stable": true,
+    "require": {
+        "php": ">=8.2",
+        "symfony/framework-bundle": "^6.3"
+    }
+}
