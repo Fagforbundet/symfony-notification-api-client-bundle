@@ -18,6 +18,10 @@
     "prefer-stable": true,
     "require": {
         "php": ">=8.2",
-        "symfony/framework-bundle": "^6.3"
+        "symfony/framework-bundle": "^6.3",
+        "giggsey/libphonenumber-for-php": "^8.13",
+        "symfony/uid": "^6.3",
+        "symfony/http-client": "^6.3",
+        "halloverden/symfony-oidc-client-bundle": "^3.7"
     }
 }
