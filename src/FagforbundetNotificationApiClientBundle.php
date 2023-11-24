@@ -20,7 +20,7 @@ class FagforbundetNotificationApiClientBundle extends AbstractBundle {
       ->addDefaultsIfNotSet()
       ->children()
         ->scalarNode('http_client')->defaultValue('http_client')->end()
-        ->scalarNode('base_url')->defaultValue('https://api.meldinger.fagforbundet.no')->end()
+        ->scalarNode('base_url')->defaultValue('https://api.meldinger.fagforbundet.dev')->end()
         ->scalarNode('token_provider')->defaultValue('hv.oidc.client_credentials_token_provider.default')->end()
       ->end()
     ;

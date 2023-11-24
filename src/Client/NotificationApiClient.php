@@ -22,7 +22,7 @@ use Symfony\Contracts\HttpClient\Exception\TransportExceptionInterface;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
 
 final class NotificationApiClient implements NotificationApiClientInterface {
-  public const DEFAULT_BASE_URI = 'https://api.meldinger.fagforbundet.no';
+  public const DEFAULT_BASE_URI = 'https://api.meldinger.fagforbundet.dev';
 
   private const SEND_EMAIL_ENDPOINT = '/v1/notifications/email';
   private const UPLOAD_EMAIL_ATTACHMENT_ENDPOINT = '/v1/notifications/email/attachments';
