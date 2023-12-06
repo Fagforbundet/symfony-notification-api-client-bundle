@@ -155,7 +155,7 @@ final class NotificationApiClient implements NotificationApiClientInterface {
         'body' => $emailAttachment->getFile(),
         'query' => [
           'filename' => $emailAttachment->getFilename(),
-          'inline' => $emailAttachment->isInline()
+          'inline' => $emailAttachment->isInline() ? 'true' : 'false'
         ],
         'auth_bearer' => $this->clientCredentialsTokenProviderService->getToken()
       ]);
