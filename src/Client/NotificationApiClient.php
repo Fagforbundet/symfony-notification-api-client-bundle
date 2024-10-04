@@ -14,12 +14,15 @@ use Fagforbundet\NotificationApiClientBundle\Notification\Email\SentEmailMessage
 use Fagforbundet\NotificationApiClientBundle\Notification\Sms\SentSmsMessage;
 use Fagforbundet\NotificationApiClientBundle\Notification\Sms\SmsMessage;
 use HalloVerden\Oidc\ClientBundle\Interfaces\ClientCredentialsTokenProviderServiceInterface;
+use Symfony\Component\HttpClient\Exception\JsonException;
 use Symfony\Component\HttpClient\HttpClient;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Uid\Uuid;
 use Symfony\Contracts\HttpClient\Exception\ExceptionInterface;
+use Symfony\Contracts\HttpClient\Exception\HttpExceptionInterface;
 use Symfony\Contracts\HttpClient\Exception\TransportExceptionInterface;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
+use Symfony\Contracts\HttpClient\ResponseInterface;
 
 final class NotificationApiClient implements NotificationApiClientInterface {
   public const DEFAULT_BASE_URI = 'https://api.meldinger.fagforbundet.dev';
@@ -31,6 +34,8 @@ final class NotificationApiClient implements NotificationApiClientInterface {
   private const HEADER_FORCE_USE_RECIPIENTS = 'X-Force-Use-Recipients';
   private const HEADER_DEV_RECIPIENT_OVERRIDE = 'X-Dev-Recipient-Override';
   private const HEADER_DEV_RECIPIENT_OVERRIDES = 'X-Dev-Recipient-Overrides';
+
+  private const ERROR_VALIDATION_ERROR = 'VALIDATION_ERROR';
 
   private HttpClientInterface $client;
   private SendEmailMessagePayloadFactory $sendEmailMessagePayloadFactory;
@@ -82,6 +87,8 @@ final class NotificationApiClient implements NotificationApiClientInterface {
 
     try {
       $result = $response->toArray();
+    } catch (HttpExceptionInterface $e) {
+      throw new HttpSendMessageException(\sprintf('Unable to send an email: got (%d) from notification-api: ' . $this->getErrorResponse($response), $e->getCode()), $response, previous: $e);
     } catch (ExceptionInterface $e) {
       throw new HttpSendMessageException(\sprintf('Unable to send an email: got (%d) from notification-api', $e->getCode()), $response, previous: $e);
     }
@@ -119,8 +126,10 @@ final class NotificationApiClient implements NotificationApiClientInterface {
 
     try {
       $result = $response->toArray();
+    } catch (HttpExceptionInterface $e) {
+      throw new HttpSendMessageException(\sprintf('Unable to send an sms: got (%d) from notification-api: ' . $this->getErrorResponse($response), $e->getCode()), $response, previous: $e);
     } catch (ExceptionInterface $e) {
-      throw new HttpSendMessageException(\sprintf('Unable to send an email: got (%d) from notification-api', $e->getCode()), $response, previous: $e);
+      throw new HttpSendMessageException(\sprintf('Unable to send an sms: got (%d) from notification-api', $e->getCode()), $response, previous: $e);
     }
 
     return $this->sentSmsMessageFactory->create($result['sms']);
@@ -165,11 +174,56 @@ final class NotificationApiClient implements NotificationApiClientInterface {
 
     try {
       $result = $response->toArray();
+    } catch (HttpExceptionInterface $e) {
+      throw new HttpSendMessageException(\sprintf('Unable to send an email attachment: got (%d) from notification-api: ' . $this->getErrorResponse($response), $e->getCode()), $response, previous: $e);
     } catch (ExceptionInterface $e) {
       throw new HttpSendMessageException(\sprintf('Unable to send an email attachment: got (%d) from notification-api', $e->getCode()), $response, previous: $e);
     }
 
     return Uuid::fromString($result['attachment']['uuid']);
+  }
+
+  /**
+   * @param ResponseInterface $response
+   *
+   * @return string
+   * @noinspection PhpDocMissingThrowsInspection
+   * @noinspection PhpUnhandledExceptionInspection
+   */
+  private function getErrorResponse(ResponseInterface $response): string {
+    try {
+      $responseArray = $response->toArray(false);
+    } catch (JsonException) {
+      return $response->getContent(false);
+    }
+
+    $error = $responseArray['error'] ?? null;
+    if (!$error) {
+      return $response->getContent(false);
+    }
+
+    if (self::ERROR_VALIDATION_ERROR !== $error || !isset($responseArray['violations'])) {
+      return $error;
+    }
+
+    $violationErrors = [];
+    foreach ($responseArray['violations'] as $violation) {
+      if (!isset($violation['invalidValue']) || !isset($violation['message'])) {
+        continue;
+      }
+
+      $violationErrors[] = \sprintf('"%s" - "%s"', $violation['invalidValue'], $violation['message']);
+    }
+
+    if (empty($violationErrors)) {
+      try {
+        $violationErrors[] = \json_encode($responseArray['violations'], JSON_THROW_ON_ERROR);
+      } catch (\JsonException) {
+        return $error;
+      }
+    }
+
+    return \sprintf('%s (%s)', $error, \implode(', ', $violationErrors));
   }
 
 }
