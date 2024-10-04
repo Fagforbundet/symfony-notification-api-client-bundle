@@ -121,7 +121,7 @@ final class NotificationApiClient implements NotificationApiClientInterface {
         'auth_bearer' => $this->clientCredentialsTokenProviderService->getToken(),
       ]);
     } catch (TransportExceptionInterface $e) {
-      throw new SendMessageException('Unable to send an email: Could not reach notification-api.', previous: $e);
+      throw new SendMessageException('Unable to send an sms: Could not reach notification-api.', previous: $e);
     }
 
     try {
